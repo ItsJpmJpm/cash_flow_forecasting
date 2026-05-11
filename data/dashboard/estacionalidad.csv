@@ -1,0 +1,13 @@
+mes_numero,mes_nombre,trimestre,factor_estacionalidad,factor_shock_2021,factor_shock_2022,factor_shock_2023,es_bajo_demanda
+1,Enero,1,0.65,0.75,1.00,1.00,Si
+2,Febrero,1,0.75,0.80,1.00,1.00,Si
+3,Marzo,1,0.85,0.85,1.00,1.00,No
+4,Abril,2,0.90,1.00,1.00,1.00,No
+5,Mayo,2,1.00,1.00,1.00,1.00,No
+6,Junio,2,1.05,1.00,1.00,1.00,No
+7,Julio,3,0.70,1.00,1.00,1.00,Si
+8,Agosto,3,0.60,1.00,1.00,1.00,Si
+9,Septiembre,3,0.85,1.00,1.00,1.00,No
+10,Octubre,4,1.00,1.00,0.92,1.00,No
+11,Noviembre,4,1.10,1.00,0.90,1.00,No
+12,Diciembre,4,0.80,1.00,0.88,1.00,Si

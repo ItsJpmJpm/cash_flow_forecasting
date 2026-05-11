@@ -1,0 +1,31 @@
+parametro,valor,categoria
+Nombre,TechSolutions Toledo S.L.,Empresa
+Sector,Servicios IT / Consultoría tecnológica,Empresa
+Ubicación,Toledo, España,Empresa
+CIF,B45678901,Empresa
+FechaConstitucion,2018-01-01,Empresa
+Empleados,50,Empresa
+Tecnicos,35,Empresa
+Admin,10,Empresa
+Direccion,5,Empresa
+TicketPromedioProyecto,15000-80000,Empresa
+ContratosMantenimiento,500-3000,Empresa
+CicloVentaMeses,2-6,Empresa
+TasaRenovacion,75%,Empresa
+ClientesTarget,Pymes y ayuntamientos CLM y Madrid,Empresa
+Breakeven,200000,Empresa
+ReservasMinimo,150000,Empresa
+CashFlowMedioMensual,30000-50000,Financiero
+RatioCobroDias,45,Financiero
+PagoProveedoresDias,30,Financiero
+PagoNominaDia,25,Financiero
+IngresosConsultoria,60%,Ingresos
+IngresosMantenimiento,25%,Ingresos
+IngresosLicencias,10%,Ingresos
+IngresosFormacion,5%,Ingresos
+EgresosNomina,55%,Egresos
+EgresosProveedores,20%,Egresos
+EgresosInfraestructura,10%,Egresos
+EgresosAlquiler,8%,Egresos
+EgresosMarketing,5%,Egresos
+EgresosGenerales,2%,Egresos

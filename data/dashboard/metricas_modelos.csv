@@ -1,0 +1,5 @@
+modelo,mae,rmse,mape,r2,direction_accuracy,theils_u,cumple_mae,cumple_rmse,cumple_mape,cumple_r2
+ARIMA,48348.29,59642.59,176.74,-0.57,54.55,0.81,No,No,No,No
+Neural Network,48936.98,61736.79,152.74,-0.68,36.36,0.83,No,No,No,No
+GBM,41839.81,56741.20,130.02,-0.42,36.36,0.77,No,No,No,No
+Target,15000.00,20000.00,10.00,0.70,75.00,1.00,N/A,N/A,N/A,N/A

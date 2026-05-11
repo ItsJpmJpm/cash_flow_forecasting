@@ -113,6 +113,26 @@ def generate_cash_flow_data(
     # Add derived features
     df['cash_flow_real'] = df['ingresos_totales'] - df['egresos_totales']
 
+    # === LAG FEATURES (Critical for time series forecasting) ===
+    # Lag features: previous cash flow values
+    df['cash_flow_lag1'] = df['cash_flow_real'].shift(1)
+    df['cash_flow_lag2'] = df['cash_flow_real'].shift(2)
+
+    # Rolling statistics
+    df['media_movil_3'] = df['cash_flow_real'].rolling(3).mean()
+
+    # Percentage change (variation from previous month)
+    df['variacion_mes_anterior'] = df['cash_flow_real'].pct_change()
+
+    # Handle NaN values from lag features at the start
+    # Fill first row (Jan 2021) with values that make sense
+    # For lag1/lag2: use overall mean as proxy for unknown previous months
+    mean_cf = df['cash_flow_real'].mean()
+    df.loc[df['cash_flow_lag1'].isna(), 'cash_flow_lag1'] = mean_cf
+    df.loc[df['cash_flow_lag2'].isna(), 'cash_flow_lag2'] = mean_cf
+    df.loc[df['media_movil_3'].isna(), 'media_movil_3'] = mean_cf
+    df.loc[df['variacion_mes_anterior'].isna(), 'variacion_mes_anterior'] = 0
+
     return df
 
 

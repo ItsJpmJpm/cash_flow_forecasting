@@ -67,32 +67,35 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float
 
 def compare_models(df: pd.DataFrame,
                    arima_results: Dict,
-                   nn_results: Dict) -> pd.DataFrame:
+                   nn_results: Dict,
+                   gbm_results: Dict = None) -> pd.DataFrame:
     """
-    Compare ARIMA and Neural Network models.
+    Compare ARIMA, Neural Network, and GBM models.
 
     Args:
         df: Original DataFrame
         arima_results: Results from train_arima
         nn_results: Results from train_mlp
+        gbm_results: Results from train_gbm (optional)
 
     Returns:
         DataFrame with comparison table
     """
-    # Calculate metrics for both models
+    # Calculate metrics for ARIMA
     arima_metrics = calculate_metrics(
         arima_results['test_data'].values,
         arima_results['forecast']
     )
 
+    # Calculate metrics for NN
     nn_metrics = calculate_metrics(
         nn_results['actual'],
         nn_results['predictions']
     )
 
     # Create comparison DataFrame
-    comparison = pd.DataFrame({
-        'Metric': ['MAE (€)', 'RMSE (€)', 'MAPE (%)', 'R²', 'Direction Accuracy (%)', 'Theil\'s U'],
+    comparison_data = {
+        'Metric': ['MAE (€)', 'RMSE (€)', 'MAPE (%)', 'R²', 'Direction Accuracy (%)', "Theil's U"],
         'ARIMA': [
             arima_metrics['mae'],
             arima_metrics['rmse'],
@@ -109,23 +112,44 @@ def compare_models(df: pd.DataFrame,
             nn_metrics['direction_accuracy'],
             nn_metrics['theil_u']
         ]
-    })
+    }
+
+    # Add GBM if provided
+    if gbm_results:
+        gbm_metrics = calculate_metrics(
+            gbm_results['actual'],
+            gbm_results['predictions']
+        )
+        comparison_data['GBM'] = [
+            gbm_metrics['mae'],
+            gbm_metrics['rmse'],
+            gbm_metrics['mape'],
+            gbm_metrics['r2'],
+            gbm_metrics['direction_accuracy'],
+            gbm_metrics['theil_u']
+        ]
+
+    comparison = pd.DataFrame(comparison_data)
 
     # Add winner column
-    comparison['Winner'] = comparison.apply(
-        lambda row: 'ARIMA' if (
-            'RMSE' in row['Metric'] or
-            'MAE' in row['Metric'] or
-            'MAPE' in row['Metric'] or
-            'U' in row['Metric']
-        ) and row['ARIMA'] < row['Neural Network'] else (
-            'NN' if (
-                'R²' in row['Metric'] or
-                'Accuracy' in row['Metric']
-            ) and row['ARIMA'] < row['Neural Network'] else '-'
-        ),
-        axis=1
-    )
+    def get_winner(row):
+        models = ['ARIMA', 'Neural Network']
+        if 'GBM' in comparison.columns:
+            models.append('GBM')
+
+        if 'RMSE' in row['Metric'] or 'MAE' in row['Metric'] or 'MAPE' in row['Metric'] or 'U' in row['Metric']:
+            # Lower is better
+            values = {m: row[m] for m in models}
+            min_model = min(values, key=values.get)
+            return min_model
+        elif 'R²' in row['Metric'] or 'Accuracy' in row['Metric']:
+            # Higher is better
+            values = {m: row[m] for m in models}
+            max_model = max(values, key=values.get)
+            return max_model
+        return '-'
+
+    comparison['Winner'] = comparison.apply(get_winner, axis=1)
 
     return comparison
 
@@ -173,6 +197,7 @@ def print_comparison_report(
     comparison: pd.DataFrame,
     arima_metrics: Dict = None,
     nn_metrics: Dict = None,
+    gbm_metrics: Dict = None,
     thresholds: Dict = None
 ):
     """
@@ -182,47 +207,65 @@ def print_comparison_report(
         comparison: Comparison DataFrame
         arima_metrics: Dict with ARIMA metrics
         nn_metrics: Dict with NN metrics
+        gbm_metrics: Dict with GBM metrics
         thresholds: Optional evaluation thresholds
     """
     if thresholds is None:
         thresholds = config.EVALUATION_THRESHOLDS
 
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 80)
     print("MODEL COMPARISON REPORT - Cash Flow Forecasting")
-    print("=" * 70)
+    print("=" * 80)
 
-    print(f"\n{'Metric':<25} {'ARIMA':>15} {'Neural Network':>18} {'Winner':>10}")
-    print("-" * 70)
+    # Build header based on available models
+    header = f"{'Metric':<25} {'ARIMA':>15} {'Neural Network':>18}"
+    if gbm_metrics:
+        header += " {'GBM':>12}"
+    header += " {'Winner':>10}"
+    print(header)
+    print("-" * 80)
 
     for _, row in comparison.iterrows():
-        print(f"{row['Metric']:<25} {row['ARIMA']:>15.2f} {row['Neural Network']:>18.2f} {row['Winner']:>10}")
+        line = f"{row['Metric']:<25} {row['ARIMA']:>15.2f} {row['Neural Network']:>18.2f}"
+        if 'GBM' in row:
+            line += f" {row['GBM']:>12.2f}"
+        line += f" {row['Winner']:>10}"
+        print(line)
 
     # Targets evaluation
     if arima_metrics and nn_metrics:
-        print("\n" + "-" * 70)
+        print("\n" + "-" * 80)
         print("EVALUATION AGAINST TARGETS")
-        print("-" * 70)
+        print("-" * 80)
 
-        print(f"{'Metric':<25} {'Target':>15} {'ARIMA':>15} {'NN':>15}")
-        print("-" * 70)
+        header = f"{'Metric':<25} {'Target':>15} {'ARIMA':>15} {'NN':>15}"
+        if gbm_metrics:
+            header += " {'GBM':>15}"
+        print(header)
+        print("-" * 80)
 
         target_results = [
-            ('MAE', arima_metrics['mae'], nn_metrics['mae'], 15000, True),
-            ('RMSE', arima_metrics['rmse'], nn_metrics['rmse'], 20000, True),
-            ('R²', arima_metrics['r2'], nn_metrics['r2'], 0.70, False),
+            ('MAE', arima_metrics['mae'], nn_metrics['mae'], 15000, True, gbm_metrics['mae'] if gbm_metrics else None),
+            ('RMSE', arima_metrics['rmse'], nn_metrics['rmse'], 20000, True, gbm_metrics['rmse'] if gbm_metrics else None),
+            ('R²', arima_metrics['r2'], nn_metrics['r2'], 0.70, False, gbm_metrics['r2'] if gbm_metrics else None),
         ]
 
-        for name, arima_val, nn_val, target, is_lower_better in target_results:
+        for name, arima_val, nn_val, target, is_lower_better, gbm_val in target_results:
             if is_lower_better:
                 arima_pass = "[OK]" if arima_val < target else "[X]"
                 nn_pass = "[OK]" if nn_val < target else "[X]"
+                gbm_pass = "[OK]" if gbm_val < target else "[X]" if gbm_val else ""
             else:
                 arima_pass = "[OK]" if arima_val > target else "[X]"
                 nn_pass = "[OK]" if nn_val > target else "[X]"
+                gbm_pass = "[OK]" if gbm_val > target else "[X]" if gbm_val else ""
 
-            print(f"{name:<25} {target:>15} {arima_val:>12.2f} {arima_pass:<4} {nn_val:>12.2f} {nn_pass:<4}")
+            line = f"{name:<25} {target:>15} {arima_val:>12.2f} {arima_pass:<4} {nn_val:>12.2f} {nn_pass:<4}"
+            if gbm_val is not None:
+                line += f" {gbm_val:>12.2f} {gbm_pass:<4}"
+            print(line)
 
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 80)
 
 
 def evaluate_low_demand_detection(df: pd.DataFrame,

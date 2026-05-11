@@ -39,12 +39,29 @@ class CashFlowPreprocessor:
         for m in range(1, 13):
             df[f'mes_{m}'] = (df['mes'] == m).astype(int)
 
+        # === LAG FEATURES (Critical for time series forecasting) ===
+        # Lag features: previous cash flow values
+        df['cash_flow_lag1'] = df['cash_flow_real'].shift(1)
+        df['cash_flow_lag2'] = df['cash_flow_real'].shift(2)
+
+        # Rolling statistics
+        df['media_movil_3'] = df['cash_flow_real'].rolling(3).mean()
+
+        # Percentage change (variation from previous month)
+        df['variacion_mes_anterior'] = df['cash_flow_real'].pct_change()
+
+        # Fill NaN values with sensible defaults
+        mean_cf = df['cash_flow_real'].mean()
+        df['cash_flow_lag1'] = df['cash_flow_lag1'].fillna(mean_cf)
+        df['cash_flow_lag2'] = df['cash_flow_lag2'].fillna(mean_cf)
+        df['media_movil_3'] = df['media_movil_3'].fillna(mean_cf)
+        df['variacion_mes_anterior'] = df['variacion_mes_anterior'].fillna(0)
+
         return df
 
     def get_feature_columns(self, df: pd.DataFrame) -> list:
         """Get list of feature columns for model input."""
-        exclude = ['fecha', 'cash_flow_real', 'año', 'mes', 'trimestre',
-                   'is_low_demand', 'ingresos_totales', 'egresos_totales']
+        exclude = ['fecha', 'cash_flow_real', 'año', 'mes', 'trimestre', 'is_low_demand']
         features = [col for col in df.columns if col not in exclude]
         return features
 
